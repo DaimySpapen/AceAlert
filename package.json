@@ -1,0 +1,17 @@
+{
+  "name": "acealert",
+  "version": "2.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "DaimySpapen-https://github.com/DaimySpapen",
+  "license": "MIT",
+  "description": "Discord bot for AceOfCreation's Discord server.",
+  "dependencies": {
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3"
+  }
+}
