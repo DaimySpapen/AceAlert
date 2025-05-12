@@ -7,7 +7,7 @@ module.exports = {
         .setContent('📖 **Available commands**');
 
         const statsText = new TextDisplayBuilder()
-        .setContent('📊 **!stats**\nDisplays stats about the YouTube channel.\nShows subscriber count, total views, and video count.');
+        .setContent('📊 **!stats**\nDisplays stats about the YouTube channel.\nShows subscriber count, total views, video count, and creation date.');
 
         const latestText = new TextDisplayBuilder()
         .setContent('🆕 **!latest**\nDisplays the latest video from the YouTube channel.\nFetches and shows the title and link to the most recent video uploaded.');
@@ -28,7 +28,7 @@ module.exports = {
         .setContent('ℹ️ **Quick Information**');
         
         const supportText = new TextDisplayBuilder()
-        .setContent('🛟 **Support:** Reach out to Daimy Spapen for any assistance');
+        .setContent('🛟 **Support:** Reach out to daimyspapen on Discord for any assistance');
         
         const channelText = new TextDisplayBuilder()
         .setContent('📺 **YouTube:** Updates are fetched every hour automatically');
@@ -42,5 +42,3 @@ module.exports = {
         return message.reply({components: [commandsContainer, separator, infoContainer], flags: 32768});
     }
 }
-
-// Absolutely not sorry for the totally unreadable code. MUHAHAHA

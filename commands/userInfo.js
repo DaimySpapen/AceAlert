@@ -1,8 +1,9 @@
-const { PermissionFlagsBits, ContainerBuilder, TextDisplayBuilder, SectionBuilder, ThumbnailBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
+const { ChannelType, PermissionFlagsBits, ContainerBuilder, TextDisplayBuilder, SectionBuilder, ThumbnailBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 
 module.exports = {
     name: 'userinfo',
     async execute (message, args) {
+        if (message.channel.type === ChannelType.DM) return;
         if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) return;
         
         try {

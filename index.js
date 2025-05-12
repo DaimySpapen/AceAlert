@@ -1,16 +1,17 @@
-const { Client, Collection, GatewayIntentBits, ActivityType } = require('discord.js'); // Original version: 14.16.3, here for testing purposes
+const { Client, Collection, GatewayIntentBits, Partials, ActivityType } = require('discord.js'); // Original version: 14.16.3, here for testing purposes
 const cron = require('node-cron');
+const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 require('events').setMaxListeners(20);
 
 const client = new Client({intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences
+    GatewayIntentBits.Guilds, // Intent to be able to see guilds. Used in almost everything.
+    GatewayIntentBits.GuildMessages, // To be able to get new messages from guilds.
+    GatewayIntentBits.MessageContent, // To be able to see the content of the message. This is to see if it's a command so it can respond.
+    GatewayIntentBits.GuildMembers, // This is needed for the !userinfo command to get information about the given user.
+    GatewayIntentBits.GuildPresences // Also needed for the !userinfo command to get the presence of the given user.
 ]});
 client.commands = new Collection();
 
@@ -77,8 +78,8 @@ async function fetchWithRetries(url) {
         const apiKey = getNextApiKey();
         const fullUrl = `${url}&key=${apiKey}`;
         try {
-            const response = await fetch(fullUrl);
-            const data = await response.json();
+            const response = await axios.get(fullUrl);
+            const data = response.data;
             if (data.error) {
                 console.error(`API Key Error (${apiKey}):`, data.error.message);
                 retries++;
@@ -86,7 +87,7 @@ async function fetchWithRetries(url) {
                 return data;
             }
         } catch (error) {
-            console.error(`Fetch error with API key (${apiKey}):`, error);
+            console.error(`Axios error with API key (${apiKey}):`, error);
             retries++;
         }
     }

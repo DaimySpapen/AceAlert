@@ -1,8 +1,9 @@
-const { PermissionFlagsBits, SectionBuilder, TextDisplayBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ChannelType, PermissionFlagsBits, SectionBuilder, TextDisplayBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
     name: 'clear',
     async execute (message, args) {
+        if (message.channel.type === ChannelType.DM) return;
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return;
 
         const amount = parseInt(args[0]);
@@ -39,6 +40,6 @@ module.exports = {
                     i.reply(`Error while trying to delete ${amount} messages`);
                 }
             }
-        })
+        });
     }
 }

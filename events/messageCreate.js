@@ -1,3 +1,4 @@
+const { isUserInGuild } = require('../utils/isUserInGuild');
 const path = require('path');
 const fs = require('fs');
 
@@ -21,7 +22,10 @@ module.exports = {
     once: false,
     async execute (message) {
         if (message.author.bot || !message.content.startsWith(prefix)) return;
-        if (message.channel.type === 'DM') return;
+        const isInGuild = isUserInGuild(message.client, message.author.id, '853340040201633829');
+        if (!isInGuild) {
+            return message.reply('Sorry, this bot is only for members of our community.');
+        }
 
         const args = message.content.slice(prefix.length).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
