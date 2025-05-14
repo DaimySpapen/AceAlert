@@ -1,4 +1,5 @@
-const { Client, Collection, GatewayIntentBits, Partials, ActivityType } = require('discord.js'); // Original version: 14.16.3, here for testing purposes
+const { Client, Collection, GatewayIntentBits, ActivityType } = require('discord.js'); // Original version: 14.16.3, here for testing purposes
+const { cleanTemp } = require('./utils/cleanTemp');
 const cron = require('node-cron');
 const axios = require('axios');
 const path = require('path');
@@ -11,7 +12,8 @@ const client = new Client({intents: [
     GatewayIntentBits.GuildMessages, // To be able to get new messages from guilds.
     GatewayIntentBits.MessageContent, // To be able to see the content of the message. This is to see if it's a command so it can respond.
     GatewayIntentBits.GuildMembers, // This is needed for the !userinfo command to get information about the given user.
-    GatewayIntentBits.GuildPresences // Also needed for the !userinfo command to get the presence of the given user.
+    GatewayIntentBits.GuildPresences, // Also needed for the !userinfo command to get the presence of the given user.
+    GatewayIntentBits.GuildMessageReactions // Needed for seeing reactions
 ]});
 client.commands = new Collection();
 
@@ -156,7 +158,8 @@ https://www.youtube.com/watch?v=${videoId}`);
 }
 
 // Ready event
-client.once('ready', () => {
+client.once('ready', async () => {
+    await fetchMessages();
     console.log(`Logged in as ${client.user.tag}`);
     loadVideoData();
 
@@ -197,12 +200,53 @@ async function testApiKeys() {
     }
 }
 
+// Function to fetch last 100 messages of every channel
+async function fetchMessages() {
+    const guild = client.guilds.cache.get('853340040201633829');
+    const textChannels = guild.channels.cache.filter(
+        channel => channel.isTextBased() && channel.viewable && channel.type === 0
+    );
+
+    const fetchPromises = [];
+
+    for (const [_, channel] of textChannels) {
+        const fetchPromise = channel.messages.fetch({limit: 100})
+        .then(messages => {
+            console.log(`Cached ${messages.size} messages for ${channel.name}`);
+        })
+        .catch(err => {
+            console.error(`Failed to scan #${channel.name}`);
+        });
+
+        fetchPromises.push(fetchPromise);
+    }
+    await Promise.all(fetchPromises);
+}
+
+/* Function to fetch last 100 messages of every channel
+async function fetchMessages() {
+    const guild = client.guilds.cache.get('1191881507283935322');
+    const textChannels = guild.channels.cache.filter(
+        channel => channel.isTextBased() && channel.viewable && channel.type === 0
+    );
+
+    for (const [_, channel] of textChannels) {
+        try {
+            const messages = await channel.messages.fetch({limit: 100});
+            console.log(`Cached ${messages.size} messages for ${channel.name}`);
+        } catch (err) {
+            console.error(`Failed to scan #${channel.name}:`, err);
+        }
+    }
+}*/
+
 //testApiKeys();
 client.login(process.env.DISCORD_TOKEN);
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     console.log('Received SIGINT. Destroying Discord client...');
     client.destroy()
+    await cleanTemp()
     .then(() => {
         console.log('Client destroyed. Exiting...');
         return new Promise(res => setTimeout(res, 1000));

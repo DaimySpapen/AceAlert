@@ -18,8 +18,11 @@ module.exports = {
         const clearText = new TextDisplayBuilder()
         .setContent('🧹 **!clear [number]**\nBulk deletes a specified number of messages from the current channel.\nAccepts a number between 1 and 100.\n*Note: Requires Manage Messages permission.*');
 
+        const askText = new TextDisplayBuilder()
+        .setContent('🖼️ **!ask [question] + image(s)**\nAnalyzes attached image(s) and answers your question.\nAlso supports text-only questions for general answers.\n*Tip: If you have multiple images. Ask the bot like it\'s a single image.*');
+
         const commandsContainer = new ContainerBuilder()
-        .addTextDisplayComponents(titleText, statsText, latestText, userInfoText, clearText);
+        .addTextDisplayComponents(titleText, statsText, latestText, userInfoText, clearText, askText);
 
         const separator = new SeparatorBuilder()
         .setSpacing(SeparatorSpacingSize.Large);
@@ -35,9 +38,12 @@ module.exports = {
         
         const tipsText = new TextDisplayBuilder()
         .setContent('💡 **Tips:**\n• Use @silent before mentions to avoid notifications\n• Commands work in any channel the bot has access to\n• All YouTube stats are updated in real-time');
+
+        const reactionInfoText = new TextDisplayBuilder()
+        .setContent('❓ **Image Reaction (❓ emoji)**\nReact to a message with ❓ to generate a description of the image(s) in that message.\nUseful for quick summaries without typing commands.\n');
         
         const infoContainer = new ContainerBuilder()
-        .addTextDisplayComponents(infoTitle, supportText, channelText, tipsText);
+        .addTextDisplayComponents(infoTitle, supportText, channelText, reactionInfoText, tipsText);
         
         return message.reply({components: [commandsContainer, separator, infoContainer], flags: 32768});
     }
