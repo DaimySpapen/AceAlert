@@ -203,7 +203,7 @@ async function testApiKeys() {
 
 // Function to fetch last 100 messages of every channel for the AI image descripto describer thingy
 async function fetchMessages() {
-    const guild = client.guilds.cache.get('1191881507283935322');
+    const guild = client.guilds.cache.get('853340040201633829');
     const textChannels = guild.channels.cache.filter(
         channel => channel.isTextBased() && channel.viewable && channel.type === 0
     );
