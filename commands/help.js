@@ -40,7 +40,7 @@ module.exports = {
         .setContent('💡 **Tips:**\n• Use @silent before mentions to avoid notifications\n• Commands work in any channel the bot has access to\n• All YouTube stats are updated in real-time');
 
         const reactionInfoText = new TextDisplayBuilder()
-        .setContent('❓ **Image Reaction (❓ emoji)**\nReact to a message with ❓ to generate a description of the image(s) in that message.\nUseful for quick summaries without typing commands.\n');
+        .setContent('🔎 **Image Reaction (🔎 emoji)**\nReact to a message with 🔎 to generate a description of the image(s) in that message.\nUseful for quick summaries without typing commands.\n');
         
         const infoContainer = new ContainerBuilder()
         .addTextDisplayComponents(infoTitle, supportText, channelText, reactionInfoText, tipsText);

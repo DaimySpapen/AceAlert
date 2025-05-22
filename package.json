@@ -1,9 +1,9 @@
 {
   "name": "acealert",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "main": "index.js",
   "keywords": [],
-  "author": "DaimySpapen-https://github.com/DaimySpapen",
+  "author": "Daimy Spapen - https://github.com/DaimySpapen",
   "license": "MIT",
   "description": "Discord bot for AceOfCreation's Discord server.",
   "dependencies": {

@@ -2,6 +2,21 @@ const { downloadAndResizeImage } = require('../utils/optimize');
 const { EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 
+const excludedChannels = [
+    "857305541851873350",
+    "853340040201633832",
+    "914320289846935572",
+    "914598353793351680",
+    "853366736157147146",
+    "950486620581265418",
+    
+];
+
+const emojiList = [
+    "🔎",
+    "🔍"
+];
+
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -21,7 +36,7 @@ module.exports = {
             }
         }
 
-        if (reaction.emoji.name !== '❓') return;
+        if (!emojiList.includes(reaction.emoji.name)) return;
 
         const message = reaction.message;
         const channel = reaction.message.channel;

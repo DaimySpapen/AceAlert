@@ -1,4 +1,4 @@
-const { Client, Collection, GatewayIntentBits, ActivityType } = require('discord.js'); // Original version: 14.16.3, here for testing purposes
+const { Client, GatewayIntentBits, ActivityType } = require('discord.js'); // Original version: 14.16.3, here for testing purposes
 const { cleanTemp } = require('./utils/cleanTemp');
 const cron = require('node-cron');
 const axios = require('axios');
@@ -15,9 +15,8 @@ const client = new Client({intents: [
     GatewayIntentBits.GuildPresences, // Also needed for the !userinfo command to get the presence of the given user.
     GatewayIntentBits.GuildMessageReactions // Needed for seeing reactions
 ]});
-client.commands = new Collection();
 
-const videoDataFile = './data/videos.json';
+const videoDataFile = path.join(__dirname, './data/videos.json');
 let lastVideos = [];
 let notifiedVideos = new Set();
 let isCheckingVideo = false;
@@ -61,7 +60,7 @@ function loadVideoData() {
 function saveVideoData() {
     fs.writeFileSync(
         videoDataFile,
-        JSON.stringify({ videoIds: lastVideos.slice(-5) }, null, 2),
+        JSON.stringify({videoIds: lastVideos.slice(-5)}, null, 2),
         'utf-8'
     );
 }
@@ -112,8 +111,10 @@ async function checkNewVideo() {
             return;
         }
 
-        // filter only video items
-        const validVideos = data.items.filter(item => item.id.kind === 'youtube#video');
+        // filter only video items and make sure it's the same fucking channel because god forbit the API gives videos of the channel i requested
+        const validVideos = data.items.filter(item =>
+            item.id.kind === 'youtube#video' && item.snippet.channelId === channelId && item.snippet.channelTitle === 'AceOfCreation'
+        );
         const newVideos = validVideos.map(video => ({
             id: video.id.videoId,
             publishedAt: video.snippet.publishedAt
@@ -178,7 +179,7 @@ client.once('ready', async () => {
         currentStatus = !currentStatus;
     }, 10000);
 
-    cron.schedule('*/3 * * * *', checkNewVideo);
+    cron.schedule('*/1 * * * *', checkNewVideo);
 });
 
 // Function to test all api keys
@@ -200,9 +201,9 @@ async function testApiKeys() {
     }
 }
 
-// Function to fetch last 100 messages of every channel
+// Function to fetch last 100 messages of every channel for the AI image descripto describer thingy
 async function fetchMessages() {
-    const guild = client.guilds.cache.get('853340040201633829');
+    const guild = client.guilds.cache.get('1191881507283935322');
     const textChannels = guild.channels.cache.filter(
         channel => channel.isTextBased() && channel.viewable && channel.type === 0
     );
@@ -222,23 +223,6 @@ async function fetchMessages() {
     }
     await Promise.all(fetchPromises);
 }
-
-/* Function to fetch last 100 messages of every channel
-async function fetchMessages() {
-    const guild = client.guilds.cache.get('1191881507283935322');
-    const textChannels = guild.channels.cache.filter(
-        channel => channel.isTextBased() && channel.viewable && channel.type === 0
-    );
-
-    for (const [_, channel] of textChannels) {
-        try {
-            const messages = await channel.messages.fetch({limit: 100});
-            console.log(`Cached ${messages.size} messages for ${channel.name}`);
-        } catch (err) {
-            console.error(`Failed to scan #${channel.name}:`, err);
-        }
-    }
-}*/
 
 //testApiKeys();
 client.login(process.env.DISCORD_TOKEN);
