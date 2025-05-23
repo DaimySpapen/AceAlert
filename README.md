@@ -2,7 +2,7 @@
 
 This repository is meant to share the code for the **AceAlert Discord bot** used in the **✮Card Game✮ Discord server**.
 
-**Latest change log (2.3.0)**
+**Latest change log (2.3.1)**
 
 - **Fixed** the video check interval. Forgot to change it after testing. Don't even wanna talk about it.
 
