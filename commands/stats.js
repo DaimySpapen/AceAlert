@@ -1,13 +1,28 @@
-const { EmbedBuilder } = require('discord.js');
-const { getKey } = require('../utils/getKey');
-const axios = require('axios');
+import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import axios from "axios";
 
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
 
-module.exports = {
-    name: 'stats',
-    async execute (message) {
+const apiKeys = [
+    process.env.YOUTUBE_API_KEY_7,
+    process.env.YOUTUBE_API_KEY_8,
+    process.env.YOUTUBE_API_KEY_9
+];
+let apiKeyIndex = 0;
+
+function getKey() {
+    const key = apiKeys[apiKeyIndex];
+    apiKeyIndex = (apiKeyIndex + 1) % apiKeys.length;
+    return key;
+}
+
+export default {
+    data: new SlashCommandBuilder()
+    .setName('stats')
+    .setDescription('View the current statistics on the channel'),
+    async execute (interaction) {
         try {
+            await interaction.deferReply();
             const API_KEY = getKey();
 
             const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${CHANNEL_ID}&key=${API_KEY}`;
@@ -28,10 +43,10 @@ module.exports = {
                 {name: 'Channel Created', value: new Date(publishedAt).toLocaleDateString(), inline: true}
             );
 
-            return await message.reply({embeds: [embed]});
+            await interaction.editReply({embeds: [embed]});
         } catch (err) {
             console.error("Failed to fetch channel stats:", err);
-            return message.reply('Failed to fetch channel stats.');
+            interaction.reply('Failed to fetch channel stats.').catch(() => interaction.editReply('Failed to fetch channel stats.'));
         }
     }
 }

@@ -1,41 +1,22 @@
-const { Client, GatewayIntentBits, ActivityType } = require('discord.js'); // Original version: 14.16.3, here for testing purposes
-const { cleanTemp } = require('./utils/cleanTemp');
-const cron = require('node-cron');
-const axios = require('axios');
-const path = require('path');
-const fs = require('fs');
-require('dotenv').config();
-require('events').setMaxListeners(20);
+import { Client, GatewayIntentBits, Collection, ActivityType } from "discord.js";
+import { fileURLToPath } from "url";
+import {} from "dotenv/config";
+import cron from "node-cron";
+import fs from "fs/promises";
+import axios from "axios";
+import path from "path";
 
-const client = new Client({intents: [
-    GatewayIntentBits.Guilds, // Intent to be able to see guilds. Used in almost everything.
-    GatewayIntentBits.GuildMessages, // To be able to get new messages from guilds.
-    GatewayIntentBits.MessageContent, // To be able to see the content of the message. This is to see if it's a command so it can respond.
-    GatewayIntentBits.GuildMembers, // This is needed for the !userinfo command to get information about the given user.
-    GatewayIntentBits.GuildPresences, // Also needed for the !userinfo command to get the presence of the given user.
-    GatewayIntentBits.GuildMessageReactions // Needed for seeing reactions
-]});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const videoDataFile = path.join(__dirname, './data/videos.json');
+const client = new Client({intents: [GatewayIntentBits.Guilds]});
+client.commands = new Collection();
+
+const videoFile = path.join(__dirname, 'videos.json');
 let lastVideos = [];
 let notifiedVideos = new Set();
 let isCheckingVideo = false;
 
-// event loader
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-    const event = require(filePath);
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args, client));
-    } else {
-        client.on(event.name, (...args) => event.execute(...args, client));
-    }
-}
-
-// api key array
 const apiKeys = [
     process.env.YOUTUBE_API_KEY_1,
     process.env.YOUTUBE_API_KEY_2,
@@ -43,60 +24,83 @@ const apiKeys = [
     process.env.YOUTUBE_API_KEY_4,
     process.env.YOUTUBE_API_KEY_5,
     process.env.YOUTUBE_API_KEY_6
-];
+].filter(Boolean);
 let apiKeyIndex = 0;
 
-// Function to load saved video data
-function loadVideoData() {
-    if (fs.existsSync(videoDataFile)) {
-        const data = JSON.parse(fs.readFileSync(videoDataFile, 'utf-8'));
+// load all slash commands
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = (await fs.readdir(commandsPath)).filter(file => file.endsWith('.js'));
+for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = (await import(`file://${filePath.replace(/\\/g, '/')}`)).default;
+    client.commands.set(command.data.name, command);
+}
+
+// function to load video data
+async function loadVideoData() {
+    try {
+        await fs.access(videoFile); // if this fails, the file doesn't exist
+        const data = JSON.parse(await fs.readFile(videoFile, 'utf-8'));
         lastVideos = data.videoIds || [];
-    } else {
-        lastVideos = [];
+    } catch {
+        lastVideos = []; // and then it returns an empty array
     }
 }
 
-// Function to save video data
-function saveVideoData() {
-    fs.writeFileSync(
-        videoDataFile,
+// function to save video data to json
+async function saveVideoData() {
+    await fs.writeFile(
+        videoFile,
         JSON.stringify({videoIds: lastVideos.slice(-5)}, null, 2),
         'utf-8'
     );
 }
 
-// Function to get new api key
-function getNextApiKey() {
+// function to get next api key
+function getAPIKey() {
     const key = apiKeys[apiKeyIndex];
     apiKeyIndex = (apiKeyIndex + 1) % apiKeys.length;
     return key;
 }
 
-// fetch with retries and better api key rotation
+// function to fetch the youtube url with retries
 async function fetchWithRetries(url) {
     let retries = 0;
     while (retries < apiKeys.length) {
-        const apiKey = getNextApiKey();
-        const fullUrl = `${url}&key=${apiKey}`;
+        const apiKey = getAPIKey();
+        const fullURL = `${url}&key=${apiKey}`;
         try {
-            const response = await axios.get(fullUrl);
+            const response = await axios.get(fullURL);
             const data = response.data;
             if (data.error) {
-                console.error(`API Key Error (${apiKey}):`, data.error.message);
+                console.error(`API Key Error (${apiKeyIndex}):`, data.error.message);
                 retries++;
             } else {
                 return data;
             }
-        } catch (error) {
-            console.error(`Axios error with API key (${apiKey}):`, error);
+        } catch (err) {
+            console.error(`Axios error with API key (${apiKeyIndex}):`, err.message);
             retries++;
         }
     }
-    console.error('All API keys failed.');
+    console.error('All API keys failed');
     return null;
 }
 
-// Function to check for new videos
+// function to send a new video to Discord
+function notifyVideo(videoId, channelName) {
+    if (notifiedVideos.has(videoId)) return; // prevent duplicate notifcations
+
+    const channel = client.channels.cache.get(process.env.DISCORD_CHANNEL_ID);
+    if (channel) {
+        channel.send(`Hey @everyone, ${channelName} just posted a new video! 🎥 Check it out:\nhttps://www.youtube.com/watch?v=${videoId}`);
+        notifiedVideos.add(videoId);
+    } else {
+        console.error('Could not notify about video: Discord channel not found');
+    }
+}
+
+// function to check for new videos
 async function checkNewVideo() {
     if (isCheckingVideo) return;
     isCheckingVideo = true;
@@ -104,133 +108,73 @@ async function checkNewVideo() {
     try {
         const channelId = process.env.YOUTUBE_CHANNEL_ID;
         const url = `https://www.googleapis.com/youtube/v3/search?channelId=${channelId}&part=snippet,id&order=date&maxResults=5`;
-
         const data = await fetchWithRetries(url);
-        if (!data || !data.items || data.items.length === 0) {
-            console.error('Invalid or empty response from YouTube API.');
+
+        if (!data || !data.items || !data.items.length === 0) {
+            console.error('Invalid or empty response from YouTube API');
             return;
         }
 
-        // filter only video items and make sure it's the same fucking channel because god forbit the API gives videos of the channel i requested
         const validVideos = data.items.filter(item =>
-            item.id.kind === 'youtube#video' && item.snippet.channelId === channelId && item.snippet.channelTitle === 'AceOfCreation'
+            item.id.kind === 'youtube#video' &&
+            item.snippet.channelId === channelId
         );
+
         const newVideos = validVideos.map(video => ({
             id: video.id.videoId,
             publishedAt: video.snippet.publishedAt
         }));
 
-        // check for new unseen videos with valid timestamps
         const unseenVideos = newVideos.filter(video => {
             const isNew = !lastVideos.some(v => v.id === video.id);
             const isLater = !lastVideos.length || new Date(video.publishedAt) > new Date(lastVideos[lastVideos.length - 1].publishedAt);
             return isNew && isLater;
         });
-
         if (unseenVideos.length > 0) {
             for (const video of unseenVideos.reverse()) {
-                notifyDiscord(video.id);
+                notifyVideo(video.id, 'AceOfCreation');
                 lastVideos.push(video);
             }
             lastVideos = lastVideos.slice(-5);
-            saveVideoData();
+            await saveVideoData();
         }
-    } catch (error) {
-        console.error('Error checking for new videos:', error);
+    } catch (err) {
+        console.error('Error checking for new videos:', err.message);
     } finally {
         isCheckingVideo = false;
     }
 }
 
-// Function to send a notification to discord
-function notifyDiscord(videoId) {
-    if (notifiedVideos.has(videoId)) return; // prevent duplicate notifications
-
-    const channel = client.channels.cache.get(process.env.DISCORD_CHANNEL_ID);
-    if (channel) {
-        channel.send(`Hey @everyone, AceOfCreation just posted a new video! 🎥 Check it out:
-https://www.youtube.com/watch?v=${videoId}`);
-        console.log(`Notified about video: ${videoId}`);
-        notifiedVideos.add(videoId);
-        setTimeout(() => notifiedVideos.delete(videoId), 86400000);
-    } else {
-        console.error('Discord channel not found.');
-    }
-}
-
-// Ready event
+// client ready event
 client.once('ready', async () => {
-    await fetchMessages();
-    console.log(`Logged in as ${client.user.tag}`);
-    loadVideoData();
-
-    // Set initial activity
-    client.user.setActivity({name: 'AceOfCreation', type: ActivityType.Listening});
-
-    let currentStatus = true;
-
-    setInterval(() => {
-        if (currentStatus) {
-            client.user.setActivity({name: 'AceOfCreation', type: ActivityType.Listening});
-        } else {
-            client.user.setActivity({name: '!help', type: ActivityType.Playing});
-        }
-        
-        currentStatus = !currentStatus;
-    }, 10000);
-
+    console.log(`${client.user.tag} is online`);
+    client.user.setActivity({name: "testing", type: ActivityType.Playing});
     cron.schedule('*/3 * * * *', checkNewVideo);
+    loadVideoData();
 });
 
-// Function to test all api keys
-async function testApiKeys() {
-    console.log('Testing API keys...');
-    for (const apiKey of apiKeys) {
-        try {
-            const testUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&key=${apiKey}`;
-            const response = await fetch(testUrl);
-            const data = await response.json();
-            if (data.error) {
-                console.error(`API Key Test Failed (${apiKey}): ${data.error.message}`);
-            } else {
-                console.log(`API Key Working: ${apiKey}`);
+// event handler for slash commands
+client.on('interactionCreate', async interaction => {
+    if (interaction.isCommand()) {
+        const command = client.commands.get(interaction.commandName);
+        if (command) {
+            try {
+                await command.execute(interaction);
+            } catch (err) {
+                console.error('Error executing command:', err);
+                await interaction.reply({content: '❌ Something went wrong with the command!', flags: 64})
+                .catch(async () => await interaction.editReply({content: '❌ Something went wrong with the command!', flags: 64}));
             }
-        } catch (error) {
-            console.error(`Error testing API key (${apiKey}):`, error);
         }
     }
-}
+});
 
-// Function to fetch last 100 messages of every channel for the AI image descripto describer thingy
-async function fetchMessages() {
-    const guild = client.guilds.cache.get('1191881507283935322');
-    const textChannels = guild.channels.cache.filter(
-        channel => channel.isTextBased() && channel.viewable && channel.type === 0
-    );
-
-    const fetchPromises = [];
-
-    for (const [_, channel] of textChannels) {
-        const fetchPromise = channel.messages.fetch({limit: 100})
-        .then(messages => {
-            console.log(`Cached ${messages.size} messages for ${channel.name}`);
-        })
-        .catch(err => {
-            console.error(`Failed to scan #${channel.name}`);
-        });
-
-        fetchPromises.push(fetchPromise);
-    }
-    await Promise.all(fetchPromises);
-}
-
-//testApiKeys();
+// log in the discord client
 client.login(process.env.DISCORD_TOKEN);
 
 process.on('SIGINT', async () => {
-    console.log('Received SIGINT. Destroying Discord client...');
+    console.log('Shutting down AceAlert...');
     client.destroy()
-    await cleanTemp()
     .then(() => {
         console.log('Client destroyed. Exiting...');
         return new Promise(res => setTimeout(res, 1000));
