@@ -15,7 +15,9 @@ export default {
             .addFields(
                 {name: '📺 YouTube', value: `[AceOfCreation](${process.env.YOUTUBE_CHANNEL_URL})`, inline: false},
                 {name: '💖 Patreon', value: `[Support on Patreon](${process.env.PATREON_CHANNEL_URL})`, inline: false},
-                {name: '☕ Ko-fi', value: `[Buy a coffee](${process.env.KOFI_CHANNEL_URL})`, inline: false}
+                {name: '☕ Ko-fi', value: `[Buy a coffee](${process.env.KOFI_CHANNEL_URL})`, inline: false},
+                {name: '🐦 X', value: `[Follow her on X](${process.env.X_CHANNEL_URL})`, inline: false},
+                {name: '🎁 Throne', value: `[Support her on Throne](${process.env.THRONE_CHANNEL_URL})`, inline: false}
             );
 
         await interaction.editReply({embeds: [embed]});
