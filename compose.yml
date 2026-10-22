@@ -1,7 +1,16 @@
 services:
   bot:
-    image: node:24-slim
+    build: .
+    env_file:
+      - .env
     environment:
-      DISCORD_TOKEN:
-      DISCORD_CLIENT_ID:
-      
+      NODE_ENV: production
+      DATA_DIR: /app/data
+    volumes:
+      - bot-data:/app/data
+    init: true
+    restart: unless-stopped
+    stop_signal: SIGINT
+    stop_grace_period: 15s
+volumes:
+  bot-data:

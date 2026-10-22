@@ -1,0 +1,2 @@
+1. Fix the system that checks for videos to not hit rate limits
+2. use something more reliable than a JSON file, i guess

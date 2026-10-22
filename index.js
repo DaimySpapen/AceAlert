@@ -12,7 +12,9 @@ const __dirname = path.dirname(__filename);
 const client = new Client({intents: [GatewayIntentBits.Guilds]});
 client.commands = new Collection();
 
-const videoFile = path.join(__dirname, 'videos.json');
+const dataDir = process.env.DATA_DIR || __dirname;
+await fs.mkdir(dataDir, {recursive: true});
+const videoFile = path.join(dataDir, 'videos.json');
 let lastVideos = [];
 let notifiedVideos = new Set();
 let isCheckingVideo = false;

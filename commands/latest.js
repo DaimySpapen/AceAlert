@@ -6,7 +6,7 @@ import path from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const videosPath = path.join(__dirname, '../videos.json');
+const videosPath = path.join(process.env.DATA_DIR || path.join(__dirname, '..'), 'videos.json');
 
 export default {
     data: new SlashCommandBuilder()
