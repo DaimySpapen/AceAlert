@@ -1,2 +1,8 @@
 1. Fix the system that checks for videos to not hit rate limits
-2. use something more reliable than a JSON file, i guess
+
+2. Use something more reliable than a JSON file, i guess. Solution: SQLite:
+Database exists and is valid: Continue normally. Ceck for new videos and send notifications.
+Database doesn't exist: Fetch the latest videos, store their IDs as already known, and start monitoring without sending historical notifications.
+Database is corrupt or unreadable: Stop sending notifications and log an error.
+
+3. Implement a health check for docker.
