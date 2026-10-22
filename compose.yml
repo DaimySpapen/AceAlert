@@ -1,0 +1,7 @@
+services:
+  bot:
+    image: node:24-slim
+    environment:
+      DISCORD_TOKEN:
+      DISCORD_CLIENT_ID:
+      
