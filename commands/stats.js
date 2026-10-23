@@ -2,6 +2,10 @@ import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import axios from "axios";
 
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
+const statsCache = {
+    data: null,
+    expiresAt: 0
+};
 
 const apiKeys = [
     process.env.YOUTUBE_API_KEY_7,
@@ -16,6 +20,27 @@ function getKey() {
     return key;
 }
 
+async function fetchChannelStats() {
+    const key = getKey();
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${CHANNEL_ID}&key=${key}`;
+    const response = await axios.get(url);
+    const channel = response.data.items[0];
+
+    return channel;
+}
+
+async function getChannelStats() {
+    if (statsCache.data && Date.now() < statsCache.expiresAt) {
+        return statsCache.data;
+    }
+
+    const data = await fetchChannelStats();
+    
+    statsCache.data = data;
+    statsCache.expiresAt = Date.now() + 15 * 60_000;
+    return data;
+}
+
 export default {
     data: new SlashCommandBuilder()
     .setName('stats')
@@ -23,14 +48,11 @@ export default {
     async execute (interaction) {
         try {
             await interaction.deferReply();
-            const API_KEY = getKey();
 
-            const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${CHANNEL_ID}&key=${API_KEY}`;
-            const response = await axios.get(url);
-            const channel = response.data.items[0];
+            const stats = await getChannelStats();
 
-            const { subscriberCount, videoCount, viewCount } = channel.statistics;
-            const { title, thumbnails, publishedAt } = channel.snippet;
+            const { subscriberCount, videoCount, viewCount } = stats.statistics;
+            const { title, thumbnails, publishedAt } = stats.snippet;
 
             const embed = new EmbedBuilder()
             .setTitle(`${title} - Channel Statistics`)
