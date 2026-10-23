@@ -151,6 +151,7 @@ async function checkNewVideo() {
 client.once('clientReady', async () => {
     console.log(`${client.user.tag} is online`);
     client.user.setActivity({name: 'AceOfCreation', type: ActivityType.Listening});
+    checkNewVideo();
     cron.schedule('*/3 * * * *', checkNewVideo);
     loadVideoData();
 });
