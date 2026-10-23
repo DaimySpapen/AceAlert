@@ -112,8 +112,7 @@ async function checkNewVideo() {
         const url = `https://www.googleapis.com/youtube/v3/search?channelId=${channelId}&part=snippet,id&order=date&maxResults=5`;
         const data = await fetchWithRetries(url);
 
-        if (!data || !data.items || !data.items.length === 0) {
-            console.error('Invalid or empty response from YouTube API');
+        if (!data || !Array.isArray(data.items)) {``
             return;
         }
 
@@ -151,7 +150,7 @@ async function checkNewVideo() {
 client.once('clientReady', async () => {
     console.log(`${client.user.tag} is online`);
     client.user.setActivity({name: 'AceOfCreation', type: ActivityType.Listening});
-    checkNewVideo();
+    await checkNewVideo();
     cron.schedule('*/3 * * * *', checkNewVideo);
     loadVideoData();
 });
