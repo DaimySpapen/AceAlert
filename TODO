@@ -1,6 +1,2 @@
-1. Use something more reliable than a JSON file, i guess. Solution: SQLite:
-Database exists and is valid: Continue normally. Ceck for new videos and send notifications.
-Database doesn't exist: Fetch the latest videos, store their IDs as already known, and start monitoring without sending historical notifications.
-Database is corrupt or unreadable: Stop sending notifications and log an error.
 
-2. Implement a health check for docker.
+1. Implement a health check for docker.
