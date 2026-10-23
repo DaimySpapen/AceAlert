@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Collection, ActivityType } from "discord.js";
 import { fileURLToPath } from "url";
+import database from "./database.js";
 import {} from "dotenv/config";
 import cron from "node-cron";
 import fs from "fs/promises";
@@ -14,9 +15,6 @@ client.commands = new Collection();
 
 const dataDir = process.env.DATA_DIR || __dirname;
 await fs.mkdir(dataDir, {recursive: true});
-const videoFile = path.join(dataDir, 'videos.json');
-let lastVideos = [];
-let notifiedVideos = new Set();
 let isCheckingVideo = false;
 
 const apiKeys = [
@@ -36,26 +34,6 @@ for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const command = (await import(`file://${filePath.replace(/\\/g, '/')}`)).default;
     client.commands.set(command.data.name, command);
-}
-
-// function to load video data
-async function loadVideoData() {
-    try {
-        await fs.access(videoFile); // if this fails, the file doesn't exist
-        const data = JSON.parse(await fs.readFile(videoFile, 'utf-8'));
-        lastVideos = data.videoIds || [];
-    } catch {
-        lastVideos = []; // and then it returns an empty array
-    }
-}
-
-// function to save video data to json
-async function saveVideoData() {
-    await fs.writeFile(
-        videoFile,
-        JSON.stringify({videoIds: lastVideos.slice(-5)}, null, 2),
-        'utf-8'
-    );
 }
 
 // function to get next api key
@@ -90,16 +68,16 @@ async function fetchWithRetries(url) {
 }
 
 // function to send a new video to Discord
-function notifyVideo(videoId, channelName) {
-    if (notifiedVideos.has(videoId)) return; // prevent duplicate notifcations
-
-    const channel = client.channels.cache.get(process.env.DISCORD_CHANNEL_ID);
-    if (channel) {
-        channel.send(`Hey @everyone, ${channelName} just posted a new video! 🎥 Check it out:\nhttps://www.youtube.com/watch?v=${videoId}`);
-        notifiedVideos.add(videoId);
-    } else {
-        console.error('Could not notify about video: Discord channel not found');
+async function notifyVideo(videoId, channelName) {
+    const channel = await client.channels.fetch(process.env.DISCORD_CHANNEL_ID);
+    if (!channel || ! channel.isTextBased()) {
+        throw new Error('Discord notification channel unavailable');
     }
+
+    await channel.send(
+        `Hey @everyone, ${channelName} just posted a new video! 🎥 Check it out:\n` +
+        `https://www.youtube.com/watch?v=${videoId}`
+    );
 }
 
 // function to check for new videos
@@ -108,36 +86,52 @@ async function checkNewVideo() {
     isCheckingVideo = true;
 
     try {
-        const channelId = process.env.YOUTUBE_CHANNEL_ID;
-        const url = `https://www.googleapis.com/youtube/v3/search?channelId=${channelId}&part=snippet,id&order=date&maxResults=5`;
-        const data = await fetchWithRetries(url);
+        const playlistId = process.env.YOUTUBE_UPLOADS_PLAYLIST_ID;
+        const url =
+            'https://www.googleapis.com/youtube/v3/playlistItems' +
+            `?playlistId=${playlistId}` +
+            '&part=snippet,contentDetails' +
+            '&maxResults=20';
 
+        const data = await fetchWithRetries(url);
         if (!data || !Array.isArray(data.items)) {
             return;
         }
 
-        const validVideos = data.items.filter(item =>
-            item.id.kind === 'youtube#video' &&
-            item.snippet.channelId === channelId
-        );
-
-        const newVideos = validVideos.map(video => ({
-            id: video.id.videoId,
-            publishedAt: video.snippet.publishedAt
+        const videos = data.items.filter(item =>
+            item.snippet?.resourceId?.kind === 'youtube#video' &&
+            item.contentDetails?.videoId &&
+            item.contentDetails?.videoPublishedAt
+        ).map(item => ({
+            id: item.contentDetails.videoId,
+            publishedAt: item.contentDetails.videoPublishedAt
         }));
+        
+        // first-run initialization
+        if (!database.isInitialized()) {
+            database.initialize(videos);
+            console.log(`Database initialized with ${videos.length} videos. Historical notifications skipped.`);
+            return;
+        }
 
-        const unseenVideos = newVideos.filter(video => {
-            const isNew = !lastVideos.some(v => v.id === video.id);
-            const isLater = !lastVideos.length || new Date(video.publishedAt) > new Date(lastVideos[lastVideos.length - 1].publishedAt);
-            return isNew && isLater;
-        });
-        if (unseenVideos.length > 0) {
-            for (const video of unseenVideos.reverse()) {
-                notifyVideo(video.id, 'AceOfCreation');
-                lastVideos.push(video);
+        const unseenVideos = videos.filter(video => !database.hasVideo(video.id));
+        unseenVideos.reverse(); // send the oldest ones first
+
+        for (const video of unseenVideos) {
+            try {
+                await notifyVideo(video.id, 'AceOfCreation');
+
+                database.addVideo(
+                    video.id,
+                    video.publishedAt,
+                    'sent'
+                );
+
+                console.log(`Notified video: ${video.id}`);
+            } catch (err) {
+                console.error(`Failed to notify video ${video.id}: ${err}`);
+                break; // retry next time
             }
-            lastVideos = lastVideos.slice(-5);
-            await saveVideoData();
         }
     } catch (err) {
         console.error('Error checking for new videos:', err.message);
@@ -152,7 +146,6 @@ client.once('clientReady', async () => {
     client.user.setActivity({name: 'AceOfCreation', type: ActivityType.Listening});
     await checkNewVideo();
     cron.schedule('*/3 * * * *', checkNewVideo);
-    loadVideoData();
 });
 
 // event handler for slash commands
