@@ -112,7 +112,7 @@ async function checkNewVideo() {
         const url = `https://www.googleapis.com/youtube/v3/search?channelId=${channelId}&part=snippet,id&order=date&maxResults=5`;
         const data = await fetchWithRetries(url);
 
-        if (!data || !Array.isArray(data.items)) {``
+        if (!data || !Array.isArray(data.items)) {
             return;
         }
 
