@@ -13,7 +13,6 @@ const db = new DatabaseSync(databasePath, {timeout: 5000});
 db.exec('PRAGMA journal_model = DELETE');
 db.exec('PRAGMA synchronous = FULL');
 
-
 if (isNewDatabase) {
     db.exec(`
         CREATE TABLE videos (
@@ -112,11 +111,26 @@ function initialize(videos) {
     }
 }
 
+function healthCheck() {
+    try {
+        const results = db.prepare('PRAGMA quick_check').all();
+        const healthy = results.length === 1 && results[0].quick_check === 'ok';
+        if (!healthy) {
+            console.error('SQLite health check failed:', results);
+        }
+        return healthy;
+    } catch (err) {
+        console.error('Error during database health check: ', err);
+        return false;
+    }
+}
+
 export default {
     hasVideo,
     addVideo,
     getVideos,
     isInitialized,
     initialize,
+    healthCheck,
     close: () => db.close()
 };

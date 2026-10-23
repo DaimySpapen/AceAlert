@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits, Collection, ActivityType } from "discord.js";
-import { fileURLToPath } from "url";
+import { startHttpServer } from "./healthCheck.js";
 import database from "./database.js";
+import { fileURLToPath } from "url";
 import {} from "dotenv/config";
 import cron from "node-cron";
 import fs from "fs/promises";
@@ -140,12 +141,18 @@ async function checkNewVideo() {
     }
 }
 
+function healthCheck() {
+    const status = client.isReady();
+    return status;
+}
+
 // client ready event
 client.once('clientReady', async () => {
     console.log(`${client.user.tag} is online`);
     client.user.setActivity({name: 'AceOfCreation', type: ActivityType.Listening});
     await checkNewVideo();
     cron.schedule('*/3 * * * *', checkNewVideo);
+    startHttpServer();
 });
 
 // event handler for slash commands
@@ -180,3 +187,5 @@ process.on('SIGINT', async () => {
         process.exit(1);
     });
 });
+
+export default {healthCheck};
