@@ -24,8 +24,8 @@ try {
     database.initialize(data.videoIds);
 
     console.log(`Migrated ${data.videoIds.length} video records`);
-} catch (error) {
-    console.error('Migration failed:', error);
+} catch (err) {
+    console.error('Migration failed:', err);
     process.exitCode = 1;
 } finally {
     database.close();

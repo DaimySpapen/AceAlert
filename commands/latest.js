@@ -3,8 +3,8 @@ import database from "../database.js";
 
 export default {
     data: new SlashCommandBuilder()
-    .setName('latest')
-    .setDescription('Get the latest video'),
+        .setName('latest')
+        .setDescription('Get the latest video'),
     async execute (interaction) {
         const [latestVideo] = database.getVideos(1);
         if (!latestVideo) {

@@ -41,8 +41,8 @@ async function getChannelStats() {
 
 export default {
     data: new SlashCommandBuilder()
-    .setName('stats')
-    .setDescription('View the current statistics on the channel'),
+        .setName('stats')
+        .setDescription('View the current statistics on the channel'),
     async execute (interaction) {
         try {
             await interaction.deferReply();
@@ -53,15 +53,15 @@ export default {
             const { title, thumbnails, publishedAt } = stats.snippet;
 
             const embed = new EmbedBuilder()
-            .setTitle(`${title} - Channel Statistics`)
-            .setColor('#FF0000')
-            .setThumbnail(thumbnails.default.url)
-            .addFields(
-                {name: 'Subscribers', value: subscriberCount.toString(), inline: true},
-                {name: 'Videos', value: videoCount.toString(), inline: true},
-                {name: 'Total views', value: viewCount.toString(), inline: true},
-                {name: 'Channel Created', value: new Date(publishedAt).toLocaleDateString(), inline: true}
-            );
+                .setTitle(`${title} - Channel Statistics`)
+                .setColor('#FF0000')
+                .setThumbnail(thumbnails.default.url)
+                .addFields(
+                    {name: 'Subscribers', value: subscriberCount.toString(), inline: true},
+                    {name: 'Videos', value: videoCount.toString(), inline: true},
+                    {name: 'Total views', value: viewCount.toString(), inline: true},
+                    {name: 'Channel Created', value: new Date(publishedAt).toLocaleDateString(), inline: true}
+                );
 
             await interaction.editReply({embeds: [embed]});
         } catch (err) {
