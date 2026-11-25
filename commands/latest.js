@@ -12,6 +12,6 @@ export default {
         }
 
         const videoUrl = `https://www.youtube.com/watch?v=${latestVideo.id}`;
-        interaction.reply(`📹 Latest video: ${videoUrl}`);
+        return interaction.reply(`📹 Latest video: ${videoUrl}`);
     }
 }
