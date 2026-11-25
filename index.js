@@ -2,7 +2,6 @@ import { Client, GatewayIntentBits, Collection, ActivityType } from "discord.js"
 import { startHttpServer } from "./healthCheck.js";
 import database from "./database.js";
 import { fileURLToPath } from "url";
-import {} from "dotenv/config";
 import cron from "node-cron";
 import fs from "fs/promises";
 import axios from "axios";
