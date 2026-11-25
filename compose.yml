@@ -12,5 +12,6 @@ services:
     restart: unless-stopped
     stop_signal: SIGINT
     stop_grace_period: 15s
+    mem_limit: 256m
 volumes:
   bot-data:
