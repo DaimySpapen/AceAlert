@@ -3,7 +3,6 @@ import { startHttpServer } from "./healthCheck.js";
 import database from "./database.js";
 import { fileURLToPath } from "url";
 import fs from "fs/promises";
-import axios from "axios";
 import path from "path";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -49,8 +48,12 @@ async function fetchWithRetries(url) {
         const apiKey = getAPIKey();
         const fullURL = `${url}&key=${apiKey}`;
         try {
-            const response = await axios.get(fullURL);
-            const data = response.data;
+            const response = await fetch(fullURL, {signal: AbortSignal.timeout(10000)});
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+
+            const data = await response.json();
             if (data.error) {
                 console.error(`API Key Error (${apiKeyIndex}):`, data.error.message);
                 retries++;
@@ -58,7 +61,7 @@ async function fetchWithRetries(url) {
                 return data;
             }
         } catch (err) {
-            console.error(`Axios error with API key (${apiKeyIndex}):`, err.message);
+            console.error(`Fetch error with API key (${apiKeyIndex}):`, err.message);
             retries++;
         }
     }
@@ -83,7 +86,6 @@ async function notifyVideo(videoId, channelName) {
 async function checkNewVideo() {
     if (isCheckingVideo) return;
     isCheckingVideo = true;
-    console.log("Checking for videos");
 
     try {
         const playlistId = process.env.YOUTUBE_UPLOADS_PLAYLIST_ID;

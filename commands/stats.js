@@ -1,5 +1,4 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import axios from "axios";
 
 const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
 const statsCache = {
@@ -23,10 +22,9 @@ function getKey() {
 async function fetchChannelStats() {
     const key = getKey();
     const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${CHANNEL_ID}&key=${key}`;
-    const response = await axios.get(url);
-    const channel = response.data.items[0];
-
-    return channel;
+    const response = await fetch(url, {signal: AbortSignal.timeout(10000)});
+    const channel = await response.json();
+    return channel.items[0];
 }
 
 async function getChannelStats() {
