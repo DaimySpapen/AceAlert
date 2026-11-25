@@ -3,7 +3,7 @@ FROM node:26-slim
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm npm ci --omit-dev
 
 COPY --chown=node:node index.js deployCommands.js database.js healthCheck.js ./
 COPY --chown=node:node commands ./commands
