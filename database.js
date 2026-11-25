@@ -10,7 +10,7 @@ mkdirSync(dataDir, {recursive: true});
 const isNewDatabase = !existsSync(databasePath);
 const db = new DatabaseSync(databasePath, {timeout: 5000});
 
-db.exec('PRAGMA journal_model = DELETE');
+db.exec('PRAGMA journal_mode = DELETE');
 db.exec('PRAGMA synchronous = FULL');
 
 if (isNewDatabase) {
