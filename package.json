@@ -9,7 +9,6 @@
   "description": "Discord bot for AceOfCreation's Discord server.",
   "dependencies": {
     "axios": "^1.21.1",
-    "discord.js": "^14.28.1",
-    "node-cron": "^4.6.0"
+    "discord.js": "^14.28.1"
   }
 }

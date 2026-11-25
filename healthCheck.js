@@ -1,6 +1,5 @@
 import db from "./database.js";
 import bot from "./index.js";
-import { schedule } from "node-cron";
 import http from "http";
 
 const PORT = 8000;

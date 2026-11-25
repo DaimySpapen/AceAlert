@@ -2,7 +2,6 @@ import { Client, GatewayIntentBits, Collection, ActivityType } from "discord.js"
 import { startHttpServer } from "./healthCheck.js";
 import database from "./database.js";
 import { fileURLToPath } from "url";
-import cron from "node-cron";
 import fs from "fs/promises";
 import axios from "axios";
 import path from "path";
@@ -84,6 +83,7 @@ async function notifyVideo(videoId, channelName) {
 async function checkNewVideo() {
     if (isCheckingVideo) return;
     isCheckingVideo = true;
+    console.log("Checking for videos");
 
     try {
         const playlistId = process.env.YOUTUBE_UPLOADS_PLAYLIST_ID;
@@ -150,7 +150,7 @@ client.once('clientReady', async () => {
     console.log(`${client.user.tag} is online`);
     client.user.setActivity({name: 'AceOfCreation', type: ActivityType.Listening});
     await checkNewVideo();
-    cron.schedule('*/3 * * * *', checkNewVideo);
+    setInterval(checkNewVideo, 3 ^ 60 * 1000);
     startHttpServer();
 });
 
