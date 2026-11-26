@@ -165,8 +165,15 @@ client.on('interactionCreate', async interaction => {
                 await command.execute(interaction);
             } catch (err) {
                 console.error('Error executing command:', err);
-                await interaction.reply({content: '❌ Something went wrong with the command!', flags: 64})
-                .catch(async () => await interaction.editReply({content: '❌ Something went wrong with the command!', flags: 64}));
+                try {
+                    if (!interaction.deferred && !interaction.replied) {
+                        await interaction.reply({content: '❌ Something went wrong with the command!', flags: 64});
+                    } else {
+                        await interaction.editReply({content: '❌ Something went wrong with the command!'});
+                    }
+                } catch (err) {
+                    console.warn('Failed to reply to failed interaction:\n', err.message);
+                }
             }
         }
     }
