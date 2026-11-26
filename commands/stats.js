@@ -20,11 +20,28 @@ function getKey() {
 }
 
 async function fetchChannelStats() {
-    const key = getKey();
-    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${CHANNEL_ID}&key=${key}`;
-    const response = await fetch(url, {signal: AbortSignal.timeout(10000)});
-    const channel = await response.json();
-    return channel.items[0];
+    let tries = 0;
+    while (tries < apiKeys.length) {
+        const key = getKey();
+        const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${CHANNEL_ID}&key=${key}`;
+        try {
+            const response = await fetch(url, {signal: AbortSignal.timeout(10000)});
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.error) {
+                retries++;
+            } else {
+                return data;
+            }
+        } catch (err) {
+            tries++;
+        }
+    }
+    console.log('All API keys failed for fetching channel stats');
+    return null;
 }
 
 async function getChannelStats() {
@@ -33,6 +50,9 @@ async function getChannelStats() {
     }
 
     const data = await fetchChannelStats();
+    if (!data || !Array.isArray(data.items)) {
+        return null;
+    }
     
     statsCache.data = data;
     statsCache.expiresAt = Date.now() + 15 * 60_000;
@@ -46,7 +66,11 @@ export default {
     async execute (interaction) {
         await interaction.deferReply();
 
-        const stats = await getChannelStats();
+        const channelData = await getChannelStats();
+        if (!channelData) {
+            return interaction.editReply({content: 'Failed to fetch channel stats', flags: 64});
+        }
+        const stats = channelData.items[0];
 
         const { subscriberCount, videoCount, viewCount } = stats.statistics;
         const { title, thumbnails, publishedAt } = stats.snippet;
