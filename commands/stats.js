@@ -44,29 +44,24 @@ export default {
         .setName('stats')
         .setDescription('View the current statistics on the channel'),
     async execute (interaction) {
-        try {
-            await interaction.deferReply();
+        await interaction.deferReply();
 
-            const stats = await getChannelStats();
+        const stats = await getChannelStats();
 
-            const { subscriberCount, videoCount, viewCount } = stats.statistics;
-            const { title, thumbnails, publishedAt } = stats.snippet;
+        const { subscriberCount, videoCount, viewCount } = stats.statistics;
+        const { title, thumbnails, publishedAt } = stats.snippet;
 
-            const embed = new EmbedBuilder()
-                .setTitle(`${title} - Channel Statistics`)
-                .setColor('#FF0000')
-                .setThumbnail(thumbnails.default.url)
-                .addFields(
-                    {name: 'Subscribers', value: subscriberCount.toString(), inline: true},
-                    {name: 'Videos', value: videoCount.toString(), inline: true},
-                    {name: 'Total views', value: viewCount.toString(), inline: true},
-                    {name: 'Channel Created', value: new Date(publishedAt).toLocaleDateString(), inline: true}
-                );
+        const embed = new EmbedBuilder()
+            .setTitle(`${title} - Channel Statistics`)
+            .setColor('#FF0000')
+            .setThumbnail(thumbnails.default.url)
+            .addFields(
+                {name: 'Subscribers', value: subscriberCount.toString(), inline: true},
+                {name: 'Videos', value: videoCount.toString(), inline: true},
+                {name: 'Total views', value: viewCount.toString(), inline: true},
+                {name: 'Channel Created', value: new Date(publishedAt).toLocaleDateString(), inline: true}
+            );
 
-            await interaction.editReply({embeds: [embed]});
-        } catch (err) {
-            console.error("Failed to fetch channel stats:", err);
-            interaction.reply('Failed to fetch channel stats.').catch(() => interaction.editReply('Failed to fetch channel stats.'));
-        }
+        await interaction.editReply({embeds: [embed]});
     }
 }
